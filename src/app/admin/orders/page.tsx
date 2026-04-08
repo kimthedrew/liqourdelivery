@@ -120,7 +120,7 @@ export default function AdminOrdersPage() {
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[700px]">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -410,7 +410,7 @@ export default function AdminOrdersPage() {
               </button>
 
               {/* Quick Actions */}
-              <div className="flex space-x-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 {selectedOrder.paymentStatus === 'pending' && (
                   <button
                     onClick={() =>

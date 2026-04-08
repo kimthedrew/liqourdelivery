@@ -60,7 +60,7 @@ export default async function Home() {
       {/* Features */}
       <section className="py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
             <div className="text-center">
               <Truck className="h-10 w-10 mx-auto text-amber-500 mb-3" />
               <h3 className="font-semibold text-gray-900">Fast Delivery</h3>

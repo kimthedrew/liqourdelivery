@@ -68,9 +68,32 @@ export default async function ProductsPage({ searchParams }: PageProps) {
           </ol>
         </nav>
 
-        <div className="flex flex-col md:flex-row gap-8">
-          {/* Sidebar */}
-          <aside className="w-full md:w-64 flex-shrink-0">
+        {/* Mobile category pills */}
+        <div className="flex md:hidden gap-2 overflow-x-auto pb-2 mb-2 -mx-1 px-1">
+          <Link
+            href="/products"
+            className={`flex-shrink-0 py-1.5 px-4 rounded-full text-sm font-medium transition-colors ${
+              !category ? 'bg-amber-500 text-black' : 'bg-white text-gray-700 shadow-sm'
+            }`}
+          >
+            All
+          </Link>
+          {categories.map((cat) => (
+            <Link
+              key={cat.id}
+              href={`/products?category=${cat.slug}`}
+              className={`flex-shrink-0 py-1.5 px-4 rounded-full text-sm font-medium transition-colors ${
+                category === cat.slug ? 'bg-amber-500 text-black' : 'bg-white text-gray-700 shadow-sm'
+              }`}
+            >
+              {cat.name}
+            </Link>
+          ))}
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+          {/* Sidebar — desktop only */}
+          <aside className="hidden md:block w-64 flex-shrink-0">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Categories</h2>
               <ul className="space-y-2">

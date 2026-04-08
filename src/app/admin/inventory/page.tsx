@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Package, Plus, Minus, AlertTriangle, CheckCircle, Search } from 'lucide-react'
+import { Package, Plus, AlertTriangle, CheckCircle, Search } from 'lucide-react'
 
 interface Product {
   id: string
@@ -125,7 +125,7 @@ export default function InventoryPage() {
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Inventory</h1>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-3">
           <Package className="h-8 w-8 text-blue-500" />
           <div>
@@ -181,7 +181,7 @@ export default function InventoryPage() {
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[540px]">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>

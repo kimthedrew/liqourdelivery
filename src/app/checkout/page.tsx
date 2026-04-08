@@ -327,11 +327,9 @@ export default function CheckoutPage() {
 
             <div className="space-y-2 text-gray-600">
               {items.map((item) => (
-                <div key={item.id} className="flex justify-between">
-                  <span>
-                    {item.name} x {item.quantity}
-                  </span>
-                  <span>KSh {(item.price * item.quantity).toLocaleString()}</span>
+                <div key={item.id} className="flex justify-between gap-3">
+                  <span className="truncate">{item.name} x {item.quantity}</span>
+                  <span className="whitespace-nowrap">KSh {(item.price * item.quantity).toLocaleString()}</span>
                 </div>
               ))}
               <hr className="my-3" />
