@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     let subtotal = 0
-    const orderItems = []
+    const orderItems: { productId: string; quantity: number; price: number }[] = []
 
     for (const item of items) {
       const product = await prisma.product.findUnique({ where: { id: item.id } })

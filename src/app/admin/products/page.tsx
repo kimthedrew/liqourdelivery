@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Plus, Edit2, Trash2, Package } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { Plus, Edit2, Trash2, Package, Upload, X, Link as LinkIcon } from 'lucide-react'
 
 interface Category {
   id: string
@@ -33,6 +33,17 @@ export default function AdminProductsPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 20
+
+  // Image upload state
+  const [imageMode, setImageMode] = useState<'url' | 'upload'>('upload')
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const [imagePreview, setImagePreview] = useState<string>('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Quick image change (on existing products in the table)
+  const [quickUploadId, setQuickUploadId] = useState<string | null>(null)
+  const quickFileRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -76,6 +87,9 @@ export default function AdminProductsPage() {
       categoryId: categories[0]?.id || '',
     })
     setEditingProduct(null)
+    setImagePreview('')
+    setUploadError('')
+    setImageMode('upload')
   }
 
   const handleEdit = (product: Product) => {
@@ -89,7 +103,61 @@ export default function AdminProductsPage() {
       quantity: product.quantity.toString(),
       categoryId: product.category.id,
     })
+    setImagePreview(product.imageUrl || '')
+    setImageMode(product.imageUrl ? 'upload' : 'upload')
+    setUploadError('')
     setShowModal(true)
+  }
+
+  const handleFileSelect = async (file: File) => {
+    if (!file) return
+    setUploadError('')
+    setUploading(true)
+
+    // Show local preview immediately
+    const reader = new FileReader()
+    reader.onload = (e) => setImagePreview(e.target?.result as string)
+    reader.readAsDataURL(file)
+
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/admin/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Upload failed')
+      setFormData((f) => ({ ...f, imageUrl: data.url }))
+      setImagePreview(data.url)
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed')
+      setImagePreview('')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  // Quick image change on an existing product (without opening the full modal)
+  const handleQuickImageChange = async (file: File, productId: string) => {
+    if (!file) return
+    setQuickUploadId(productId)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/admin/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Upload failed')
+
+      const saveRes = await fetch('/api/admin/products', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: productId, imageUrl: data.url }),
+      })
+      if (!saveRes.ok) throw new Error('Failed to save image')
+      await fetchData()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to upload image')
+    } finally {
+      setQuickUploadId(null)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -260,8 +328,17 @@ export default function AdminProductsPage() {
                 <tr key={product.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div className="flex items-center">
-                      <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                        {product.imageUrl ? (
+                      <div
+                        className="relative h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3 group cursor-pointer flex-shrink-0"
+                        title="Click to change image"
+                        onClick={() => {
+                          setQuickUploadId(product.id)
+                          quickFileRef.current?.click()
+                        }}
+                      >
+                        {quickUploadId === product.id ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-500" />
+                        ) : product.imageUrl ? (
                           <img
                             src={product.imageUrl}
                             alt={product.name}
@@ -270,6 +347,10 @@ export default function AdminProductsPage() {
                         ) : (
                           <Package className="h-5 w-5 text-gray-400" />
                         )}
+                        {/* Hover overlay */}
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 rounded-lg flex items-center justify-center transition-all">
+                          <Upload className="h-3.5 w-3.5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">{product.name}</p>
@@ -426,17 +507,115 @@ export default function AdminProductsPage() {
                 </div>
               </div>
 
+              {/* Image */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Image URL
-                </label>
-                <input
-                  type="url"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-900 bg-white placeholder-gray-400"
-                />
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">Image</label>
+                  <div className="flex gap-1 bg-gray-100 p-0.5 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => setImageMode('upload')}
+                      className={`px-3 py-1 text-xs rounded-md font-medium transition-colors ${imageMode === 'upload' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                      Upload
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageMode('url')}
+                      className={`px-3 py-1 text-xs rounded-md font-medium transition-colors ${imageMode === 'url' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                      URL
+                    </button>
+                  </div>
+                </div>
+
+                {imageMode === 'upload' ? (
+                  <div>
+                    {/* Drop zone */}
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault()
+                        const file = e.dataTransfer.files[0]
+                        if (file) handleFileSelect(file)
+                      }}
+                      className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition-colors"
+                    >
+                      {uploading ? (
+                        <div className="flex flex-col items-center gap-2 py-2">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+                          <p className="text-sm text-gray-500">Uploading...</p>
+                        </div>
+                      ) : imagePreview ? (
+                        <div className="relative">
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="h-32 object-contain mx-auto rounded-lg"
+                          />
+                          <p className="text-xs text-gray-500 mt-2">Click or drag to replace</p>
+                        </div>
+                      ) : (
+                        <div className="py-3">
+                          <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm font-medium text-gray-700">Click to upload or drag & drop</p>
+                          <p className="text-xs text-gray-400 mt-1">JPEG, PNG, WebP, GIF — max 5 MB</p>
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleFileSelect(file)
+                        e.target.value = ''
+                      }}
+                    />
+                    {uploadError && (
+                      <p className="text-red-500 text-xs mt-1">{uploadError}</p>
+                    )}
+                    {formData.imageUrl && !uploading && (
+                      <div className="flex items-center justify-between mt-2 px-2 py-1 bg-green-50 rounded-lg">
+                        <p className="text-xs text-green-700 truncate">Saved: {formData.imageUrl}</p>
+                        <button
+                          type="button"
+                          onClick={() => { setFormData((f) => ({ ...f, imageUrl: '' })); setImagePreview('') }}
+                          className="text-red-400 hover:text-red-600 ml-2 flex-shrink-0"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <div className="relative">
+                      <LinkIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                      <input
+                        type="url"
+                        value={formData.imageUrl}
+                        onChange={(e) => {
+                          setFormData({ ...formData, imageUrl: e.target.value })
+                          setImagePreview(e.target.value)
+                        }}
+                        placeholder="https://example.com/image.jpg"
+                        className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-900 bg-white placeholder-gray-400"
+                      />
+                    </div>
+                    {imagePreview && (
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="h-24 object-contain mt-2 rounded-lg border border-gray-200"
+                        onError={() => setImagePreview('')}
+                      />
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center">
@@ -534,6 +713,20 @@ export default function AdminProductsPage() {
           </div>
         </div>
       )}
+
+      {/* Hidden input for quick image change from table row */}
+      <input
+        ref={quickFileRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file && quickUploadId) handleQuickImageChange(file, quickUploadId)
+          e.target.value = ''
+          setQuickUploadId(null)
+        }}
+      />
     </div>
   )
 }
