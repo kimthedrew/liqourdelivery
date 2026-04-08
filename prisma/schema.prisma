@@ -3,12 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
 model Admin {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
   password  String
   name      String
@@ -17,7 +17,7 @@ model Admin {
 }
 
 model Customer {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
   password  String
   name      String
@@ -29,7 +29,7 @@ model Customer {
 }
 
 model Category {
-  id        String    @id @default(cuid())
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
   name      String    @unique
   slug      String    @unique
   createdAt DateTime  @default(now())
@@ -38,7 +38,7 @@ model Category {
 }
 
 model Product {
-  id          String      @id @default(cuid())
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   slug        String      @unique
   description String?
@@ -46,7 +46,7 @@ model Product {
   imageUrl    String?
   inStock     Boolean     @default(true)
   quantity    Int         @default(0)
-  categoryId  String
+  categoryId  String      @db.ObjectId
   category    Category    @relation(fields: [categoryId], references: [id])
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -54,7 +54,7 @@ model Product {
 }
 
 model Order {
-  id              String      @id @default(cuid())
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
   orderNumber     String      @unique
   customerName    String
   customerPhone   String
@@ -63,9 +63,9 @@ model Order {
   totalAmount     Float
   status          String      @default("pending") // pending, confirmed, preparing, delivered, cancelled
   paymentStatus   String      @default("pending") // pending, paid, failed
-  paymentMethod   String      @default("manual") // manual, mpesa_stk
+  paymentMethod   String      @default("manual")  // manual, mpesa_stk, cash, mpesa_till
   mpesaReceiptNo  String?
-  customerId      String?
+  customerId      String?     @db.ObjectId
   customer        Customer?   @relation(fields: [customerId], references: [id])
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -73,32 +73,32 @@ model Order {
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String  @db.ObjectId
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId String  @db.ObjectId
   product   Product @relation(fields: [productId], references: [id])
   quantity  Int
   price     Float
 }
 
 model Settings {
-  id                    String  @id @default("settings")
-  storeName             String  @default("Liquor Store")
-  storePhone            String  @default("")
-  storeEmail            String  @default("")
-  storeAddress          String  @default("")
-  mpesaEnabled          Boolean @default(false)
-  mpesaPaybillNumber    String  @default("")
-  mpesaAccountNumber    String  @default("")
-  mpesaTillNumber       String  @default("")
-  mpesaConsumerKey      String  @default("")
-  mpesaConsumerSecret   String  @default("")
-  mpesaPasskey          String  @default("")
-  mpesaShortcode        String  @default("")
-  manualPaymentPhone    String  @default("")
-  manualPaymentName     String  @default("")
-  manualPaymentInstructions String @default("")
-  deliveryFee           Float   @default(0)
-  minimumOrder          Float   @default(0)
+  id                        String  @id @map("_id")
+  storeName                 String  @default("Liquor Store")
+  storePhone                String  @default("")
+  storeEmail                String  @default("")
+  storeAddress              String  @default("")
+  mpesaEnabled              Boolean @default(false)
+  mpesaPaybillNumber        String  @default("")
+  mpesaAccountNumber        String  @default("")
+  mpesaTillNumber           String  @default("")
+  mpesaConsumerKey          String  @default("")
+  mpesaConsumerSecret       String  @default("")
+  mpesaPasskey              String  @default("")
+  mpesaShortcode            String  @default("")
+  manualPaymentPhone        String  @default("")
+  manualPaymentName         String  @default("")
+  manualPaymentInstructions String  @default("")
+  deliveryFee               Float   @default(0)
+  minimumOrder              Float   @default(0)
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCartStore } from '@/store/cart'
+import { useCustomerStore } from '@/store/customer'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -24,6 +25,8 @@ export default function CheckoutPage() {
   const getTotalPrice = useCartStore((state) => state.getTotalPrice)
   const clearCart = useCartStore((state) => state.clearCart)
 
+  const customer = useCustomerStore((state) => state.customer)
+
   const [settings, setSettings] = useState<Settings | null>(null)
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -45,6 +48,19 @@ export default function CheckoutPage() {
       .then((data) => setSettings(data))
       .catch(console.error)
   }, [])
+
+  // Pre-fill form when customer is logged in
+  useEffect(() => {
+    if (customer) {
+      setFormData((f) => ({
+        ...f,
+        name: customer.name,
+        phone: customer.phone,
+        email: customer.email,
+        address: customer.address || f.address,
+      }))
+    }
+  }, [customer])
 
   if (!mounted || !settings) {
     return (

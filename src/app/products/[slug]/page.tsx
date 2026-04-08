@@ -141,7 +141,7 @@ export default function ProductPage({ params }: { params: Promise<{ slug: string
             </div>
 
             {/* Product Details */}
-            <div className="p-8">
+            <div className="p-4 sm:p-8">
               <Link
                 href={`/products?category=${product.category.slug}`}
                 className="text-sm text-amber-600 font-medium uppercase tracking-wide hover:text-amber-700"

@@ -90,56 +90,62 @@ export default function CartPage() {
             {items.map((item) => (
               <div
                 key={item.id}
-                className="bg-white rounded-lg shadow-md p-4 flex items-center space-x-4"
+                className="bg-white rounded-lg shadow-md p-4"
               >
-                <div className="relative h-20 w-20 bg-gray-100 rounded-lg flex-shrink-0">
-                  {item.imageUrl ? (
-                    <Image
-                      src={item.imageUrl}
-                      alt={item.name}
-                      fill
-                      className="object-contain p-2"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-gray-400">
-                      <ShoppingCart className="h-8 w-8" />
+                <div className="flex items-start space-x-3">
+                  {/* Image */}
+                  <div className="relative h-16 w-16 sm:h-20 sm:w-20 bg-gray-100 rounded-lg flex-shrink-0">
+                    {item.imageUrl ? (
+                      <Image
+                        src={item.imageUrl}
+                        alt={item.name}
+                        fill
+                        className="object-contain p-2"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-gray-400">
+                        <ShoppingCart className="h-6 w-6" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Name + price */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="font-semibold text-gray-900 leading-tight">{item.name}</h3>
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="text-red-400 hover:text-red-600 flex-shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
-                  )}
-                </div>
+                    <p className="text-amber-600 font-bold mt-0.5">
+                      KSh {item.price.toLocaleString()}
+                    </p>
 
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 truncate">{item.name}</h3>
-                  <p className="text-amber-600 font-bold">
-                    KSh {item.price.toLocaleString()}
-                  </p>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                    className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </button>
-                  <span className="font-medium w-8 text-center">{item.quantity}</span>
-                  <button
-                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                    className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
-                </div>
-
-                <div className="text-right">
-                  <p className="font-bold text-gray-900">
-                    KSh {(item.price * item.quantity).toLocaleString()}
-                  </p>
-                  <button
-                    onClick={() => removeItem(item.id)}
-                    className="text-red-500 hover:text-red-600 mt-1"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
+                    {/* Qty controls + line total */}
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+                        <span className="font-medium w-6 text-center text-sm">{item.quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          className="p-1 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <p className="font-bold text-gray-900 text-sm">
+                        KSh {(item.price * item.quantity).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ShoppingBag, Eye, Check, X, Truck, Clock } from 'lucide-react'
+import { ShoppingBag, Eye, Check, X, Truck, Clock, Printer } from 'lucide-react'
 
 interface OrderItem {
   id: string
@@ -38,6 +38,8 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [filter, setFilter] = useState<string>('all')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 20
 
   useEffect(() => {
     fetchOrders()
@@ -78,8 +80,9 @@ export default function AdminOrdersPage() {
     }
   }
 
-  const filteredOrders =
-    filter === 'all' ? orders : orders.filter((o) => o.status === filter)
+  const filteredOrders = filter === 'all' ? orders : orders.filter((o) => o.status === filter)
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE))
+  const pagedOrders = filteredOrders.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   if (loading) {
     return (
@@ -96,13 +99,13 @@ export default function AdminOrdersPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 overflow-x-auto pb-1">
           {['all', ...statusOptions].map((status) => (
             <button
               key={status}
-              onClick={() => setFilter(status)}
+              onClick={() => { setFilter(status); setPage(1) }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 filter === status
                   ? 'bg-amber-500 text-black'
@@ -116,6 +119,7 @@ export default function AdminOrdersPage() {
       </div>
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
@@ -146,7 +150,7 @@ export default function AdminOrdersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {filteredOrders.length === 0 ? (
+            {pagedOrders.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-6 py-12 text-center">
                   <ShoppingBag className="h-12 w-12 text-gray-300 mx-auto mb-4" />
@@ -154,7 +158,7 @@ export default function AdminOrdersPage() {
                 </td>
               </tr>
             ) : (
-              filteredOrders.map((order) => (
+              pagedOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <p className="font-medium text-amber-600">{order.orderNumber}</p>
@@ -166,7 +170,7 @@ export default function AdminOrdersPage() {
                   <td className="px-6 py-4 text-gray-600">
                     {order.items.length} item{order.items.length > 1 ? 's' : ''}
                   </td>
-                  <td className="px-6 py-4 font-medium">
+                  <td className="px-6 py-4 font-semibold text-gray-900 whitespace-nowrap">
                     KSh {order.totalAmount.toLocaleString()}
                   </td>
                   <td className="px-6 py-4">
@@ -229,7 +233,42 @@ export default function AdminOrdersPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4 px-2">
+          <p className="text-sm text-gray-500">
+            Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredOrders.length)} of {filteredOrders.length} orders
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1 rounded-lg bg-gray-200 text-gray-700 text-sm disabled:opacity-40 hover:bg-gray-300"
+            >
+              ← Prev
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`px-3 py-1 rounded-lg text-sm ${p === page ? 'bg-amber-500 text-black font-medium' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-3 py-1 rounded-lg bg-gray-200 text-gray-700 text-sm disabled:opacity-40 hover:bg-gray-300"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Order Details Modal */}
       {selectedOrder && (
@@ -251,25 +290,26 @@ export default function AdminOrdersPage() {
               {/* Customer Info */}
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Customer Details</h3>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-1">
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-gray-900">
                   <p>
-                    <span className="text-gray-500">Name:</span> {selectedOrder.customerName}
+                    <span className="text-gray-600 font-medium">Name:</span>{' '}
+                    <span className="font-medium">{selectedOrder.customerName}</span>
                   </p>
                   <p>
-                    <span className="text-gray-500">Phone:</span>{' '}
-                    <a href={`tel:${selectedOrder.customerPhone}`} className="text-amber-600">
+                    <span className="text-gray-600 font-medium">Phone:</span>{' '}
+                    <a href={`tel:${selectedOrder.customerPhone}`} className="text-amber-600 font-medium">
                       {selectedOrder.customerPhone}
                     </a>
                   </p>
                   {selectedOrder.customerEmail && (
                     <p>
-                      <span className="text-gray-500">Email:</span>{' '}
-                      {selectedOrder.customerEmail}
+                      <span className="text-gray-600 font-medium">Email:</span>{' '}
+                      <span>{selectedOrder.customerEmail}</span>
                     </p>
                   )}
                   <p>
-                    <span className="text-gray-500">Address:</span>{' '}
-                    {selectedOrder.customerAddress}
+                    <span className="text-gray-600 font-medium">Address:</span>{' '}
+                    <span>{selectedOrder.customerAddress}</span>
                   </p>
                 </div>
               </div>
@@ -284,18 +324,18 @@ export default function AdminOrdersPage() {
                       className="flex justify-between items-center bg-gray-50 rounded-lg p-3"
                     >
                       <div>
-                        <p className="font-medium">{item.product.name}</p>
-                        <p className="text-sm text-gray-500">
+                        <p className="font-semibold text-gray-900">{item.product.name}</p>
+                        <p className="text-sm text-gray-600 mt-0.5">
                           Qty: {item.quantity} × KSh {item.price.toLocaleString()}
                         </p>
                       </div>
-                      <p className="font-medium">
+                      <p className="font-semibold text-gray-900 whitespace-nowrap ml-4">
                         KSh {(item.quantity * item.price).toLocaleString()}
                       </p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 pt-4 border-t flex justify-between items-center text-lg font-bold">
+                <div className="mt-4 pt-4 border-t flex justify-between items-center text-lg font-bold text-gray-900">
                   <span>Total</span>
                   <span className="text-amber-600">
                     KSh {selectedOrder.totalAmount.toLocaleString()}
@@ -306,15 +346,21 @@ export default function AdminOrdersPage() {
               {/* Payment Info */}
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Payment</h3>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-gray-900">
                   <p>
-                    <span className="text-gray-500">Method:</span>{' '}
-                    {selectedOrder.paymentMethod === 'mpesa_stk'
-                      ? 'M-Pesa STK Push'
-                      : 'Manual Payment'}
+                    <span className="text-gray-600 font-medium">Method:</span>{' '}
+                    <span className="font-medium">
+                      {selectedOrder.paymentMethod === 'mpesa_stk'
+                        ? 'M-Pesa STK Push'
+                        : selectedOrder.paymentMethod === 'cash'
+                        ? 'Cash'
+                        : selectedOrder.paymentMethod === 'mpesa_till'
+                        ? 'M-Pesa Till'
+                        : 'Manual Payment'}
+                    </span>
                   </p>
                   <p>
-                    <span className="text-gray-500">Status:</span>{' '}
+                    <span className="text-gray-600 font-medium">Status:</span>{' '}
                     <span
                       className={`px-2 py-1 text-xs font-medium rounded-full ${
                         selectedOrder.paymentStatus === 'paid'
@@ -329,8 +375,8 @@ export default function AdminOrdersPage() {
                   </p>
                   {selectedOrder.mpesaReceiptNo && (
                     <p>
-                      <span className="text-gray-500">M-Pesa Receipt:</span>{' '}
-                      {selectedOrder.mpesaReceiptNo}
+                      <span className="text-gray-600 font-medium">M-Pesa Receipt:</span>{' '}
+                      <span className="font-mono font-medium">{selectedOrder.mpesaReceiptNo}</span>
                     </p>
                   )}
 
@@ -353,6 +399,15 @@ export default function AdminOrdersPage() {
                   )}
                 </div>
               </div>
+
+              {/* Print */}
+              <button
+                onClick={() => window.print()}
+                className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
+              >
+                <Printer className="h-4 w-4" />
+                Print Receipt
+              </button>
 
               {/* Quick Actions */}
               <div className="flex space-x-3">

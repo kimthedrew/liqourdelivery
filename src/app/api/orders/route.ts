@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { sendSMS, orderPlacedCustomerSMS, orderPlacedAdminSMS } from '@/lib/sms'
 
 function generateOrderNumber(): string {
   const timestamp = Date.now().toString(36).toUpperCase()
@@ -49,6 +50,13 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      if (product.quantity > 0 && product.quantity < item.quantity) {
+        return NextResponse.json(
+          { error: `Insufficient stock for: ${product.name} (available: ${product.quantity})` },
+          { status: 400 }
+        )
+      }
+
       totalAmount += product.price * item.quantity
       orderItems.push({
         productId: product.id,
@@ -64,28 +72,58 @@ export async function POST(request: NextRequest) {
     const deliveryFee = settings?.deliveryFee || 0
     totalAmount += deliveryFee
 
-    // Create order
-    const order = await prisma.order.create({
-      data: {
-        orderNumber: generateOrderNumber(),
-        customerName,
-        customerPhone,
-        customerEmail,
-        customerAddress,
-        totalAmount,
-        paymentMethod,
-        items: {
-          create: orderItems,
-        },
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
+    // Create order and decrement inventory atomically
+    const order = await prisma.$transaction(async (tx) => {
+      const newOrder = await tx.order.create({
+        data: {
+          orderNumber: generateOrderNumber(),
+          customerName,
+          customerPhone,
+          customerEmail,
+          customerAddress,
+          totalAmount,
+          paymentMethod,
+          items: {
+            create: orderItems,
           },
         },
-      },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      })
+
+      // Decrement stock for each product
+      for (const item of orderItems) {
+        const product = await tx.product.findUnique({ where: { id: item.productId } })
+        if (product && product.quantity > 0) {
+          const newQty = Math.max(0, product.quantity - item.quantity)
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              quantity: newQty,
+              inStock: newQty > 0,
+            },
+          })
+        }
+      }
+
+      return newOrder
     })
+
+    // Send SMS notifications (non-blocking — don't fail order if SMS fails)
+    const storeName = settings?.storeName || 'Liquor Store'
+    const storePhone = settings?.storePhone
+
+    Promise.all([
+      sendSMS(order.customerPhone, orderPlacedCustomerSMS(order.orderNumber, order.totalAmount, storeName)),
+      storePhone
+        ? sendSMS(storePhone, orderPlacedAdminSMS(order.orderNumber, order.customerName, order.customerPhone, order.totalAmount))
+        : Promise.resolve(),
+    ]).catch(() => {}) // swallow — order is already created
 
     return NextResponse.json(order)
   } catch (error) {

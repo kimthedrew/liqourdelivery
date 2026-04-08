@@ -122,8 +122,8 @@ export default async function AdminDashboard() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="overflow-x-auto min-w-0">
+          <table className="w-full min-w-[600px]">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -175,7 +175,7 @@ export default async function AdminDashboard() {
                         {order.items.length} item{order.items.length > 1 ? 's' : ''}
                       </p>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-900">
                       KSh {order.totalAmount.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

@@ -3,12 +3,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useCustomerStore } from '@/store/customer'
 import { Mail, Lock, User, Phone, Eye, EyeOff } from 'lucide-react'
 
 type Mode = 'login' | 'register'
 
 export default function AuthPage() {
   const router = useRouter()
+  const setCustomer = useCustomerStore((state) => state.setCustomer)
   const [mode, setMode] = useState<Mode>('login')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -63,7 +65,7 @@ export default function AuthPage() {
         }
 
         const customer = await res.json()
-        localStorage.setItem('customer', JSON.stringify(customer))
+        setCustomer(customer)
         router.push('/checkout')
       }
     } catch (err) {

@@ -81,21 +81,23 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { id, name, description, price, imageUrl, inStock, quantity, categoryId } = body
 
-    if (!id || !name || !price || !categoryId) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    if (!id) {
+      return NextResponse.json({ error: 'Product ID required' }, { status: 400 })
     }
+
+    // Build update payload — only include fields that were provided
+    const data: Record<string, unknown> = {}
+    if (name !== undefined) data.name = name
+    if (description !== undefined) data.description = description || null
+    if (price !== undefined) data.price = parseFloat(price)
+    if (imageUrl !== undefined) data.imageUrl = imageUrl || null
+    if (inStock !== undefined) data.inStock = inStock
+    if (quantity !== undefined) data.quantity = parseInt(quantity) || 0
+    if (categoryId) data.categoryId = categoryId
 
     const product = await prisma.product.update({
       where: { id },
-      data: {
-        name,
-        description: description || null,
-        price: parseFloat(price),
-        imageUrl: imageUrl || null,
-        inStock: inStock ?? true,
-        quantity: parseInt(quantity) || 0,
-        categoryId,
-      },
+      data,
       include: { category: true },
     })
 
