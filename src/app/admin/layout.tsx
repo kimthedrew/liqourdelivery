@@ -14,11 +14,11 @@ export default async function AdminLayout({
   // The actual page components handle their own auth check
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 overflow-x-hidden">
       {session ? (
-        <div className="flex">
+        <div className="flex min-w-0">
           <AdminSidebar />
-          <main className="flex-1 md:ml-64 p-4 md:p-8 pt-16 md:pt-8">{children}</main>
+          <main className="flex-1 min-w-0 md:ml-64 p-4 md:p-8 pt-16 md:pt-8">{children}</main>
         </div>
       ) : (
         children
